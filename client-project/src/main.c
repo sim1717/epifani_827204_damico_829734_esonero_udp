@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
     char *space_pos = strchr(request_str, ' ');
     if (!space_pos) {
         printf("Errore: formato richiesta non valido. Usa: \"type city\"\n");
-        printf("Esempio: \"t roma\" oppure \"p Reggio Calabria\"\n");
+        printf("Esempio: \"t roma\");
         clearwinsock();
         return -1;
     }
@@ -192,8 +192,8 @@ int main(int argc, char *argv[]) {
 
     // Validazione type
     if (wr.type != 't' && wr.type != 'h' && wr.type != 'w' && wr.type != 'p') {
-        printf("Errore: tipo richiesta non valido. Usa: t, h, w, p\n");
-        printf("t=temperatura, h=umidità, w=vento, p=pressione\n");
+        printf("Richiesta non valida");
+        
         clearwinsock();
         return -1;
     }
