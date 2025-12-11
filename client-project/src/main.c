@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdint.h>  // Per uint32_t
+#include <stdint.h> 
 #include "protocol.h"
 
 void clearwinsock() {
@@ -27,42 +27,39 @@ void errorhandler(char *errorMessage) {
     printf("%s", errorMessage);
 }
 
-// ============ FUNZIONE DI RISOLUZIONE DNS (NUOVA) ============
-// Funzione per risolvere hostname o IP (con reverse lookup come specificato)
+
 struct hostent* resolve_host_complete(const char *input, char *resolved_ip, char *resolved_name) {
     struct hostent *host;
     struct in_addr addr;
 
-    // Prova prima come indirizzo IP (dotted-decimal)
+
     addr.s_addr = inet_addr(input);
     if (addr.s_addr != INADDR_NONE) {
-        // È un indirizzo IP (es: 127.0.0.1)
-        // 1. Reverse lookup: IP -> hostname
+    
         host = gethostbyaddr((char *)&addr, 4, AF_INET);
 
-        // 2. Copia IP
+     
         strcpy(resolved_ip, input);
 
-        // 3. Copia nome host (se trovato), altrimenti usa IP
+       
         if (host && host->h_name) {
             strncpy(resolved_name, host->h_name, 255);
         } else {
             strcpy(resolved_name, resolved_ip);
         }
     } else {
-        // È un hostname (es: localhost)
-        // 1. Forward lookup: hostname -> IP
+       
         host = gethostbyname(input);
 
         if (host) {
-            // 2. Copia primo IP dalla lista
+           
             struct in_addr* ina = (struct in_addr*) host->h_addr_list[0];
             strcpy(resolved_ip, inet_ntoa(*ina));
 
-            // 3. Copia nome canonico
+          
             strncpy(resolved_name, host->h_name, 255);
 
-            // 4. Reverse lookup opzionale per consistenza
+           
             struct hostent *reverse_host = gethostbyaddr((char *)ina, 4, AF_INET);
             if (reverse_host && reverse_host->h_name) {
                 strncpy(resolved_name, reverse_host->h_name, 255);
@@ -72,11 +69,11 @@ struct hostent* resolve_host_complete(const char *input, char *resolved_ip, char
         }
     }
 
-    // Assicurati che le stringhe siano terminate
+   
     resolved_name[255] = '\0';
     return host;
 }
-// ============ FINE FUNZIONE DNS ============
+
 
 // Serializza la richiesta in un buffer separato
 int serialize_request(const weather_request_t *req, char *buffer) {
@@ -173,7 +170,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // La città è tutto dopo lo spazio (skip multiple spaces)
+    // La città è tutto dopo lo spazio 
     char *city_start = space_pos;
     while (*city_start == ' ') city_start++;  // Salta spazi multipli
 
@@ -201,8 +198,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // ============ QUI USIAMO LA NUOVA FUNZIONE DNS ============
-    // 1. Risoluzione DNS del server
+    
     char server_ip[16];  // Sufficiente per "255.255.255.255"
     char server_name[256];
     struct hostent *server_hostent = resolve_host_complete(server_host, server_ip, server_name);
@@ -212,7 +208,7 @@ int main(int argc, char *argv[]) {
         clearwinsock();
         return -1;
     }
-    // ============ FINE RISOLUZIONE DNS ============
+   
 
     // 2. Crea socket UDP
     int c_socket;
@@ -259,12 +255,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // 7. Deserializza la risposta
+  
     weather_response_t risposta;
     deserialize_response(recv_buffer, &risposta);
 
-    // 8. Formatta output secondo specifiche
-    // Capitalizza prima lettera della città
+ 
     char city_capitalized[64];
     strcpy(city_capitalized, wr.city);
     if (city_capitalized[0] >= 'a' && city_capitalized[0] <= 'z') {
