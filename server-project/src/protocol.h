@@ -34,8 +34,7 @@ static const char *SUPPORTED_CITIES[NUM_CITIES] = {
     "genova",
     "bologna",
     "firenze",
-    "venezia",
-    "reggio calabria"
+    "venezia"
 };
 
 // Prototipi funzioni di generazione dati
