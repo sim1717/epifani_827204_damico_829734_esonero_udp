@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdint.h> 
+#include <stdint.h>
 #include "protocol.h"
 
 void clearwinsock() {
@@ -35,31 +35,31 @@ struct hostent* resolve_host_complete(const char *input, char *resolved_ip, char
 
     addr.s_addr = inet_addr(input);
     if (addr.s_addr != INADDR_NONE) {
-    
+
         host = gethostbyaddr((char *)&addr, 4, AF_INET);
 
-     
+
         strcpy(resolved_ip, input);
 
-       
+
         if (host && host->h_name) {
             strncpy(resolved_name, host->h_name, 255);
         } else {
             strcpy(resolved_name, resolved_ip);
         }
     } else {
-       
+
         host = gethostbyname(input);
 
         if (host) {
-           
+
             struct in_addr* ina = (struct in_addr*) host->h_addr_list[0];
             strcpy(resolved_ip, inet_ntoa(*ina));
 
-          
+
             strncpy(resolved_name, host->h_name, 255);
 
-           
+
             struct hostent *reverse_host = gethostbyaddr((char *)ina, 4, AF_INET);
             if (reverse_host && reverse_host->h_name) {
                 strncpy(resolved_name, reverse_host->h_name, 255);
@@ -69,7 +69,7 @@ struct hostent* resolve_host_complete(const char *input, char *resolved_ip, char
         }
     }
 
-   
+
     resolved_name[255] = '\0';
     return host;
 }
@@ -155,6 +155,7 @@ int main(int argc, char *argv[]) {
     char *space_pos = strchr(request_str, ' ');
     if (!space_pos) {
         printf("Errore: formato richiesta non valido. Usa: \"type city\"\n");
+
         clearwinsock();
         return -1;
     }
@@ -169,7 +170,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // La città è tutto dopo lo spazio 
+    // La città è tutto dopo lo spazio
     char *city_start = space_pos;
     while (*city_start == ' ') city_start++;  // Salta spazi multipli
 
@@ -192,12 +193,12 @@ int main(int argc, char *argv[]) {
     // Validazione type
     if (wr.type != 't' && wr.type != 'h' && wr.type != 'w' && wr.type != 'p') {
         printf("Richiesta non valida");
-        
+
         clearwinsock();
         return -1;
     }
 
-    
+
     char server_ip[16];  // Sufficiente per "255.255.255.255"
     char server_name[256];
     struct hostent *server_hostent = resolve_host_complete(server_host, server_ip, server_name);
@@ -207,7 +208,7 @@ int main(int argc, char *argv[]) {
         clearwinsock();
         return -1;
     }
-   
+
 
     // 2. Crea socket UDP
     int c_socket;
@@ -244,8 +245,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in fromAddr;
     unsigned int fromSize = sizeof(fromAddr);
 
-    int bytes_received = recvfrom(c_socket, recv_buffer, sizeof(recv_buffer), 0,
-                                 (struct sockaddr*)&fromAddr, &fromSize);
+    int bytes_received = recvfrom(c_socket, recv_buffer, sizeof(recv_buffer), 0, (struct sockaddr*)&fromAddr, &fromSize);
 
     if (bytes_received <= 0) {
         errorhandler("recvfrom() failed or connection closed prematurely\n");
@@ -254,11 +254,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-  
+
     weather_response_t risposta;
     deserialize_response(recv_buffer, &risposta);
 
- 
+
     char city_capitalized[64];
     strcpy(city_capitalized, wr.city);
     if (city_capitalized[0] >= 'a' && city_capitalized[0] <= 'z') {
