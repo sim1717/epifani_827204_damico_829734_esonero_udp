@@ -28,60 +28,46 @@ void errorhandler(char *errorMessage) {
     printf("%s", errorMessage);
 }
 
-// ============ FUNZIONE DNS SERVER  ============
-// Funzione per risolvere hostname dal client 
 void get_client_hostname(struct sockaddr_in *client_addr, char *hostname_buf, char *ip_buf) {
     struct hostent *host;
     struct in_addr addr;
 
-    // Copia l'indirizzo IP dal socket 
+
     addr.s_addr = client_addr->sin_addr.s_addr;
 
-    // 1. Converti IP in stringa 
+
     strcpy(ip_buf, inet_ntoa(addr));
 
-    // 2. Reverse DNS lookup 
-    //    Nel nostro caso addr_len_in_bytes è sempre 4 e addr_family_type è sempre AF_INET
     host = gethostbyaddr((char *)&addr, 4, AF_INET);
 
     if (host && host->h_name) {
-        // Usa il nome canonico 
+
         strncpy(hostname_buf, host->h_name, 255);
     } else {
-        // Se non risolve, usa l'IP come hostname
+
         strcpy(hostname_buf, ip_buf);
     }
     hostname_buf[255] = '\0';  // Terminazione sicura
 }
-// ============ FINE FUNZIONE DNS SERVER ============
-
-// Deserializza la richiesta dal buffer
 void deserialize_request(const char *buffer, weather_request_t *req) {
     int offset = 0;
 
-    // type: 1 byte, nessuna conversione
     req->type = buffer[offset];
     offset += 1;
 
-    // city: array di char, nessuna conversione
     memcpy(req->city, buffer + offset, sizeof(req->city));
 }
 
-// Serializza la risposta in un buffer separato
 int serialize_response(const weather_response_t *resp, char *buffer) {
     int offset = 0;
 
-    // Serializza status (4 byte con network byte order)
     uint32_t net_status = htonl(resp->status);
     memcpy(buffer + offset, &net_status, 4);
     offset += 4;
 
-    // Serializza type (1 byte, nessuna conversione)
     buffer[offset] = resp->type;
     offset += 1;
 
-    // Serializza value (float come 4 byte con network byte order)
-    
     uint32_t value_bits;
     memcpy(&value_bits, &resp->value, 4);
     uint32_t net_value_bits = htonl(value_bits);
@@ -166,31 +152,23 @@ int main(int argc, char *argv[]) {
             continue;  // Continua a ricevere altre richieste
         }
 
-        // Deserializza la richiesta dal buffer
         deserialize_request(recv_buffer, &richiesta);
 
-        // ============ QUI USIAMO LA FUNZIONE DNS  ============
-        // Ottieni hostname e IP del client per il logging
         char client_hostname[256];
         char client_ip[16];
         get_client_hostname(&client_addr, client_hostname, client_ip);
-        // ============ FINE DNS SERVER ============
 
-        // Log della richiesta
         printf("Richiesta ricevuta da %s (ip %s): type='%c', city='%s'\n",
                client_hostname, client_ip, richiesta.type, richiesta.city);
 
-        // Processa la richiesta
         weather_response_t risposta;
 
-        // Converti città in lowercase per confronto case-insensitive
         char citylower[64];
         strcpy(citylower, richiesta.city);
         for(int i = 0; citylower[i]; i++) {
             citylower[i] = tolower(citylower[i]);
         }
 
-        // Rimuovi eventuali spazi extra alla fine
         int len = strlen(citylower);
         while (len > 0 && citylower[len-1] == ' ') {
             citylower[len-1] = '\0';
@@ -256,7 +234,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Questo codice non viene mai raggiunto perché il loop è infinito
     closesocket(server_socket);
     clearwinsock();
     return 0;
