@@ -10,7 +10,6 @@
 #include <netdb.h>
 #define closesocket close
 #endif
-
 #include <stdio.h>
 #include <ctype.h>
 #include <stdint.h>
