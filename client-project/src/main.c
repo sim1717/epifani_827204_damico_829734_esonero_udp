@@ -154,7 +154,6 @@ int main(int argc, char *argv[]) {
     char *space_pos = strchr(request_str, ' ');
     if (!space_pos) {
         printf("Errore: formato richiesta non valido. Usa: \"type city\"\n");
-        printf("Esempio: \"t roma\");
         clearwinsock();
         return -1;
     }
