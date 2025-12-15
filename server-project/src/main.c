@@ -28,23 +28,24 @@ void errorhandler(char *errorMessage) {
     printf("%s", errorMessage);
 }
 
-
-
+// ============ FUNZIONE DNS SERVER  ============
+// Funzione per risolvere hostname dal client 
 void get_client_hostname(struct sockaddr_in *client_addr, char *hostname_buf, char *ip_buf) {
     struct hostent *host;
     struct in_addr addr;
 
-    
+    // Copia l'indirizzo IP dal socket 
     addr.s_addr = client_addr->sin_addr.s_addr;
 
-
+    // 1. Converti IP in stringa 
     strcpy(ip_buf, inet_ntoa(addr));
 
-
+    // 2. Reverse DNS lookup 
+    //    Nel nostro caso addr_len_in_bytes è sempre 4 e addr_family_type è sempre AF_INET
     host = gethostbyaddr((char *)&addr, 4, AF_INET);
 
     if (host && host->h_name) {
-        // Usa il nome canonico (h_name come nel PPT pagina 4)
+        // Usa il nome canonico 
         strncpy(hostname_buf, host->h_name, 255);
     } else {
         // Se non risolve, usa l'IP come hostname
@@ -52,7 +53,7 @@ void get_client_hostname(struct sockaddr_in *client_addr, char *hostname_buf, ch
     }
     hostname_buf[255] = '\0';  // Terminazione sicura
 }
-
+// ============ FINE FUNZIONE DNS SERVER ============
 
 // Deserializza la richiesta dal buffer
 void deserialize_request(const char *buffer, weather_request_t *req) {
@@ -79,6 +80,8 @@ int serialize_response(const weather_response_t *resp, char *buffer) {
     buffer[offset] = resp->type;
     offset += 1;
 
+    // Serializza value (float come 4 byte con network byte order)
+    
     uint32_t value_bits;
     memcpy(&value_bits, &resp->value, 4);
     uint32_t net_value_bits = htonl(value_bits);
@@ -100,7 +103,25 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 #endif
+    int port = PROTO_PORT;  // default
 
+        // Parsing degli argomenti del server
+        for (int i = 1; i < argc; i++) {
+            if (strcmp(argv[i], "-p") == 0 && i + 1 < argc) {
+                port = atoi(argv[++i]);
+                if (port <= 0 || port > 65535) {
+                    printf("Errore: porta non valida. Usa un valore tra 1 e 65535\n");
+                    clearwinsock();
+                    return -1;
+                }
+            } else {
+                printf("Usage: %s [-p port]\n", argv[0]);
+                printf("Esempio: %s\n", argv[0]);
+                printf("       %s -p 56700\n", argv[0]);
+                clearwinsock();
+                return -1;
+            }
+        }
     // create UDP socket
     int server_socket;
     server_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -114,8 +135,8 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in sad;
     memset(&sad, 0, sizeof(sad));
     sad.sin_family = AF_INET;
-    sad.sin_addr.s_addr = htonl(INADDR_ANY);  
-    sad.sin_port = htons(PROTO_PORT);
+    sad.sin_addr.s_addr = htonl(INADDR_ANY);  // Accetta connessioni da qualsiasi interfaccia
+    sad.sin_port = htons(port);
 
     // Bind della socket UDP
     if (bind(server_socket, (struct sockaddr*) &sad, sizeof(sad)) < 0) {
@@ -128,16 +149,16 @@ int main(int argc, char *argv[]) {
     printf("Server UDP in ascolto sulla porta %d...\n", PROTO_PORT);
     printf("Premi Ctrl+C per terminare.\n\n");
 
- 
+    // Loop principale UDP (nessun listen/accept)
     while (1) {
         weather_request_t richiesta;
         struct sockaddr_in client_addr;  // Indirizzo del client
         unsigned int client_len = sizeof(client_addr);
 
-      
+        // Buffer per ricevere il datagram
         char recv_buffer[sizeof(richiesta.type) + sizeof(richiesta.city)];
 
-       
+        // Ricevi datagram dal client (acquisisce anche l'indirizzo)
         int bytes_received = recvfrom(server_socket, recv_buffer, sizeof(recv_buffer), 0,(struct sockaddr*)&client_addr, &client_len);
 
         if (bytes_received <= 0) {
@@ -148,18 +169,18 @@ int main(int argc, char *argv[]) {
         // Deserializza la richiesta dal buffer
         deserialize_request(recv_buffer, &richiesta);
 
-        // ============ FUNZIONE DNS============
+        // ============ QUI USIAMO LA FUNZIONE DNS  ============
         // Ottieni hostname e IP del client per il logging
         char client_hostname[256];
         char client_ip[16];
         get_client_hostname(&client_addr, client_hostname, client_ip);
         // ============ FINE DNS SERVER ============
 
-       
+        // Log della richiesta
         printf("Richiesta ricevuta da %s (ip %s): type='%c', city='%s'\n",
                client_hostname, client_ip, richiesta.type, richiesta.city);
 
-       
+        // Processa la richiesta
         weather_response_t risposta;
 
         // Converti città in lowercase per confronto case-insensitive
@@ -169,7 +190,7 @@ int main(int argc, char *argv[]) {
             citylower[i] = tolower(citylower[i]);
         }
 
-        // Rimuove eventuali spazi extra alla fine
+        // Rimuovi eventuali spazi extra alla fine
         int len = strlen(citylower);
         while (len > 0 && citylower[len-1] == ' ') {
             citylower[len-1] = '\0';
