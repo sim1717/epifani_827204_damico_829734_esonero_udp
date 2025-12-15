@@ -12,7 +12,7 @@
 #define PROTO_PORT 56700  // Server port (change if needed)
 #define BUFFER_SIZE 512    // Buffer size for messages
 #define QLEN 5       // Size of pending connections queue
-#define NUM_CITIES 11
+#define NUM_CITIES 10
 typedef struct {
     char type;        // Weather data type: 't', 'h', 'w', 'p'
     char city[64];    // City name (null-terminated string)
